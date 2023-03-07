@@ -50,24 +50,23 @@ pub fn derive(input: TokenStream) -> TokenStream {
     let setter_methods = strct.fields.iter().map(| it | {
       let ident = it.ident.as_ref().expect("named fields only");
       let ty = &it.ty;
-      let local_ident = format_ident!("self.{}", ident);
 
       quote! {
-  			pub fn #ident(&mut self, #ident: ty) -> &mut Self {
-    			#local_ident = Some(#ident);
+  			pub fn #ident(&mut self, #ident: #ty) -> &mut Self {
+    			self.#ident = Some(#ident);
     			self
   			}
       }
     });
 
-    (quote! {
+    let expanded = quote! {
       #[derive(Default)]
       pub struct #builder_name {
-        #(#wrapped_fields,)*
+        #(#wrapped_fields),*
       }
 
       impl #builder_name {
-        #(setter_methods)*
+        #(#setter_methods)*
       }
 
       impl #ident {
@@ -75,6 +74,9 @@ pub fn derive(input: TokenStream) -> TokenStream {
           #builder_name::default()
         }
       }
-    })
-    .into()
+    };
+
+    eprintln!("expanded: {}", expanded);
+
+    expanded.into()
 }
