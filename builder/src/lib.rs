@@ -1,4 +1,4 @@
-use proc_macro::TokenStream;
+use proc_macro::{TokenStream};
 use quote::{format_ident, quote};
 use syn::{parse_macro_input, Data, DeriveInput};
 
@@ -21,6 +21,11 @@ use syn::{parse_macro_input, Data, DeriveInput};
 //             }
 //         }
 //     }
+//     impl CommandBuilder {
+//         fn executable(&mut self, executable: String) -> &mut Self {
+//             self.executable = Some(executable);
+//             self
+//         }
 
 #[proc_macro_derive(Builder)]
 pub fn derive(input: TokenStream) -> TokenStream {
@@ -32,19 +37,37 @@ pub fn derive(input: TokenStream) -> TokenStream {
         _ => unimplemented!(),
     };
 
-    let wrapped_types = strct.fields.iter().map(|it| {
-        let field_ident = it.ident.as_ref().expect("only supports named fields");
-        let field_type = &it.ty;
 
-        quote! {
-          #field_ident: Option<#field_type>
-        }
+    let wrapped_fields = strct.fields.iter().map(| it | {
+      let ident = it.ident.as_ref().expect("named fields only");
+      let ty = &it.ty;
+
+      quote! {
+        #ident: Option<#ty>
+      }
+    });
+
+    let setter_methods = strct.fields.iter().map(| it | {
+      let ident = it.ident.as_ref().expect("named fields only");
+      let ty = &it.ty;
+      let local_ident = format_ident!("self.{}", ident);
+
+      quote! {
+  			pub fn #ident(&mut self, #ident: ty) -> &mut Self {
+    			#local_ident = Some(#ident);
+    			self
+  			}
+      }
     });
 
     (quote! {
       #[derive(Default)]
       pub struct #builder_name {
-        #(#wrapped_types,)*
+        #(#wrapped_fields,)*
+      }
+
+      impl #builder_name {
+        #(setter_methods)*
       }
 
       impl #ident {
