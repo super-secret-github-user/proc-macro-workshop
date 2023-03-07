@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
-use syn::{Data, parse_macro_input, DeriveInput};
+use syn::{parse_macro_input, Data, DeriveInput};
 
 //     pub struct CommandBuilder {
 //         executable: Option<String>,
@@ -28,23 +28,23 @@ pub fn derive(input: TokenStream) -> TokenStream {
     let builder_name = format_ident!("{}Builder", ident);
 
     let strct = match data {
-      Data::Struct(s) => s,
-      _ => unimplemented!()
+        Data::Struct(s) => s,
+        _ => unimplemented!(),
     };
 
     let wrapped_types = strct.fields.iter().map(|it| {
-      let field_ident = it.ident.as_ref().expect("only supports named fields");
-      let field_type = &it.ty;
+        let field_ident = it.ident.as_ref().expect("only supports named fields");
+        let field_type = &it.ty;
 
-      quote! {
-        #field_ident: Option<#field_type>
-      }
+        quote! {
+          #field_ident: Option<#field_type>
+        }
     });
 
     (quote! {
       #[derive(Default)]
       pub struct #builder_name {
-				#(#wrapped_types,)*
+        #(#wrapped_types,)*
       }
 
       impl #ident {
